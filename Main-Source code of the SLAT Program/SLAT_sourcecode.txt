@@ -1,0 +1,313 @@
+from PIL import Image
+import tensorflow.keras
+import pyautogui as pg
+import tkinter as tk
+import numpy as np
+import os.path
+import pyglet
+import cv2
+
+
+class HandApp(tk.Tk):
+    
+    def __init__(self):
+        tk.Tk.__init__(self)
+        self._frame = None
+        self.geometry("600x600")
+        self.switch_frame(StartPage)
+
+    def switch_frame(self, frame_class):
+        new_frame = frame_class(self)
+        if self._frame is not None:
+            self._frame.destroy()
+        self._frame = new_frame
+        self._frame.pack()
+
+
+
+class StartPage(tk.Frame):
+    
+    def preprocessing(frame):
+    
+        #사이즈 조정 티쳐블 머신에서 사용한 이미지 사이즈로 변경
+        size = (224,224)
+        frame_resized = cv2.resize(frame, size, interpolation = cv2.INTER_AREA)
+        
+        #이미지 정규화 astype : 속성
+        frame_normalized = (frame_resized.astype(np.float32) / 127.0) - 1
+        
+        #이미지 차원 재조정 - 예측을 위해 reshape
+        #keras 모델에 공급할 올바른 모양의 배열 생성
+        frame_reshaped = frame_normalized.reshape(1,224,224,3)
+        
+        return frame_reshaped
+    
+    #예측용 함수
+    def predict(frame, model):
+       
+        prediction = model.predict(frame)
+       
+        return prediction
+    
+    #예측(판단)한 내용을 쓰고 읽고 소리내고 보여주는 함수
+    def play(data, temp, frame):
+        
+        #영상에 텍스트를 삽입한다.(넣을영상, 넣을텍스트, 텍스트위치(x,y), 폰트명, 폰트크기, 색상(R,G,B))
+        cv2.putText(frame, data, (0, 25), cv2.FONT_HERSHEY_PLAIN, 1, (0, 0, 0))
+        
+        list = []
+        
+        #result.txt에 data입력
+        f = open("C:/Users/user/.spyder-py3/result.txt", 'a')
+        f.write(data + '\n')
+        f.close()
+        
+        #result.txt를 읽음
+        f = open("C:/Users/user/.spyder-py3/result.txt", 'r')
+        lines = f.read().split('\n')
+        
+        for line in lines:
+            if temp != line and line == data:
+                f = open("C:/Users/user/.spyder-py3/trans.txt", 'a')
+                f.write(data + '\n')
+                f.close()
+                
+                #list에 data를 추가한다.
+                list.append(data.lower())
+                
+                #pyautogui로 data를 출력한다.
+                s = "".join(list)
+                pg.alert(s)
+                
+                print(data)
+                
+                #data에 해당하는 소리를 출력한다.
+                song = pyglet.media.load('C:/Users/user/.spyder-py3/sound/%s.wav' %(data.lower()))
+                song.play()
+            
+                break
+        
+            else:
+                continue
+        
+        f.close()
+    
+    #Practice 버튼을 눌렀을 경우 실행되는 함수
+    def Practice():
+        
+        #teachable-machine을 통해 만든 모델의 위치
+        model_filename = "C:\\Users\\user\\.spyder-py3\\18_case_model\\keras_model.h5"
+        
+        #keras모델 가져오기
+        model = tensorflow.keras.models.load_model(model_filename)
+        
+        #카메라를 제어할 수 있는 객체
+        capture = cv2.VideoCapture(0)
+        
+        #영상의 길이,너비 조절
+        capture.set(cv2.CAP_PROP_FRAME_WIDTH, 320)
+        capture.set(cv2.CAP_PROP_FRAME_HEIGHT, 240)
+        
+        temp = ''
+        
+        while True:
+            
+            #esc키를 입력시 종료
+            if cv2.waitKey(100) > 0:
+                break
+            
+            #영상을 한 프레임씩 읽어온다.
+            #ret : 프레임을 제대로 읽었는지 확인, 정상이면 True가 출력된다.
+            #frame : 읽은 프레임이 출력됨(이미지)
+            ret, frame = capture.read()
+            
+            preprocessed = StartPage.preprocessing(frame)
+            StartPage.prediction = StartPage.predict(preprocessed, model)
+            
+            if (StartPage.prediction.max() > 0.9):
+                if (StartPage.prediction[0,0] == StartPage.prediction.max()):
+                    data = "Meet"
+                    StartPage.play(data, temp, frame)
+                    temp = data
+                    
+                elif (StartPage.prediction[0,1] == StartPage.prediction.max()):
+                    data = "Leave"
+                    StartPage.play(data, temp, frame)
+                    temp = data
+                
+                elif (StartPage.prediction[0,2] == StartPage.prediction.max()):
+                    data = "Introduce"
+                    StartPage.play(data, temp, frame)
+                    temp = data
+                    
+                elif (StartPage.prediction[0,3] == StartPage.prediction.max()):
+                    data = "Live"
+                    StartPage.play(data, temp, frame)
+                    temp = data
+                    
+                elif (StartPage.prediction[0,4] == StartPage.prediction.max()):
+                    data = "SignLanguage"
+                    StartPage.play(data, temp, frame)
+                    temp = data
+                    
+                elif (StartPage.prediction[0,5] == StartPage.prediction.max()):
+                    data = "TakeTrouble"
+                    StartPage.play(data, temp, frame)
+                    temp = data
+                    
+                elif (StartPage.prediction[0,6] == StartPage.prediction.max()):
+                    data = "No"
+                    StartPage.play(data, temp, frame)
+                    temp = data
+                    
+                elif (StartPage.prediction[0,7] == StartPage.prediction.max()):
+                    data = "What"
+                    StartPage.play(data, temp, frame)
+                    temp = data
+                    
+                elif (StartPage.prediction[0,8] == StartPage.prediction.max()):
+                    data = "ThankYou"
+                    StartPage.play(data, temp, frame)
+                    temp = data
+                    
+                elif (StartPage.prediction[0,9] == StartPage.prediction.max()):
+                    data = "Sorry"
+                    StartPage.play(data, temp, frame)
+                    temp = data
+                    
+                elif (StartPage.prediction[0,10] == StartPage.prediction.max()):
+                    data = "Many"
+                    StartPage.play(data, temp, frame)
+                    temp = data
+                    
+                elif (StartPage.prediction[0,11] == StartPage.prediction.max()):
+                    data = "Wide"
+                    StartPage.play(data, temp, frame)
+                    temp = data
+                    
+                elif (StartPage.prediction[0,12] == StartPage.prediction.max()):
+                    data = "Like"
+                    StartPage.play(data, temp, frame)
+                    temp = data
+                    
+                elif (StartPage.prediction[0,13] == StartPage.prediction.max()):
+                    data = "Love"
+                    StartPage.play(data, temp, frame)
+                    temp = data
+                    
+                elif (StartPage.prediction[0,14] == StartPage.prediction.max()):
+                    data = "TroubleSome"
+                    StartPage.play(data, temp, frame)
+                    temp = data
+                    
+                elif (StartPage.prediction[0,15] == StartPage.prediction.max()):
+                    data = "Request"
+                    StartPage.play(data, temp, frame)
+                    temp = data
+                    
+                elif (StartPage.prediction[0,16] == StartPage.prediction.max()):
+                    data = "Everyone"
+                    StartPage.play(data, temp, frame)
+                    temp = data
+                    
+                elif (StartPage.prediction[0,17] == StartPage.prediction.max()):
+                    data = "Promise"
+                    StartPage.play(data, temp, frame)
+                    temp = data
+                    
+                else:
+                    continue
+            else:
+                continue
+            
+            #영상을 출력한다.
+            cv2.imshow("VideoFrame", frame)
+        
+        #카메라 객체반환
+        capture.release()
+        
+        #화면에 나타난 윈도우들을 종료
+        cv2.destroyAllWindows()
+    
+    def __init__(self, master):
+        
+        tk.Frame.__init__(self, master)
+        tk.Label(self, text="Sign Language AI Teacher", font=('Helvetica', 18, "bold")).pack(side="top", fill="x", pady=5)
+        tk.Label(self,height=8).pack()
+        tk.Button(self,text="1. Practice", width=40 , height=5,
+                  command= StartPage.Practice).pack()
+        tk.Button(self,text="2. Learn", width=40 , height=5,
+                  command=lambda: master.switch_frame(PageLearn)).pack()      
+
+
+class PageLearn(tk.Frame):    
+    
+    def __init__(self, master): 
+        
+        tk.Frame.__init__(self, master)
+        tk.Label(self, text = "Learn", font=('Helvetica', 18, "bold")).pack(side="top", fill="x", pady=5)
+        tk.Label(self,height = 8).pack()
+        tk.Label(self, text = str(lists), font=('Helvetica', 12, "bold"),
+                  justify = "left", wraplength = 400).pack()
+        tk.Label(self,height=2).pack()
+        word = tk.Entry(self,width=40,bd=5)
+        word.pack()
+        tk.Button(self,text="1. Add", width=40 , height=5,
+                  command = lambda: Lists.Add(lists, word.get())).pack()
+        tk.Button(self,text="2. Image", width=40 , height=5,
+                  command = lambda: Lists.ImageRead(lists, word.get())).pack()
+        tk.Button(self, text="Go back to start page",
+                  command=lambda: master.switch_frame(StartPage)).pack()    
+    
+    
+class Lists(tk.Frame):
+    
+    # Learn 창에서 Add 버튼을 누르면 실행
+    def Add(lists, word):
+        
+        if word.lower() not in lists and word.lower() != '':
+            
+            pg.alert("\nC:/Users/user/.spyder-py3/image/\nSave the image with the above path\nLowercase the image name")
+            
+            lists.append(word.lower())
+        
+        elif word.lower() == '':
+            
+            pg.alert("\nNo word")
+        
+        else:
+           
+            pg.alert("\nIt is an existing word")
+            
+    
+    #Learn 창에서 ImageRead 버튼을 누르면 실행
+    def ImageRead(lists,word):
+        
+        if word.lower() in lists and word.lower() != '':
+            
+            #이미지를 가져오기
+            path = ('C:/Users/user/.spyder-py3/image/%s.jpg' %(word.lower()))
+            
+            #이미지 파일이 존재할 경우
+            if os.path.isfile(path) == True:
+                
+                image_pil = Image.open(path)
+                    
+                #이미지 출력
+                image_pil.show()
+            
+            else:
+                
+                pg.alert("\nNo image")
+                
+        else:
+            
+            pg.alert("\nNo word")            
+
+lists = ['meet', 'leave', 'introduce', 'live', 'sign_language', 'take_trouble',
+             'no', 'what', 'thank_you', 'sorry', 'many', 'wide',
+             'like', 'trouble_some', 'request', 'everyone', 'promise', 'love']
+            
+if __name__ == "__main__":
+    Handapp = HandApp()
+    Handapp.mainloop()

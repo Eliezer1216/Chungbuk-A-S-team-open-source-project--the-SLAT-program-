@@ -1,0 +1,18 @@
+0 Meet
+1 Leave
+2 Introduce
+3 Live
+4 Sign Language
+5 Take Trouble 
+6 No
+7 What
+8 Thank you
+9 Sorry
+10 Many
+11 Wide
+12 Like
+13 Love
+14 TroubleSome
+15 Request
+16 Everyone
+17 Promise
